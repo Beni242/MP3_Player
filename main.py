@@ -20,6 +20,9 @@ pygame.mixer.init()
 list_of_songs = ['music/Alex Warren.mp3', "music/One_Direction.mp3"]
 list_of_covers = ['img/photo_1.png', 'img/photo_2.png'] 
 current_song_index = 0
+is_playing = False
+is_paused = False
+song_loaded = False
 
 
 def get_album_cover(song_index):
@@ -59,33 +62,56 @@ def threading():
     t1.start()
 
 
-#funtion to play music
-def play_music():
-   
-    global current_song_index
-
-    threading()
+#function to play/pause music
+def play_pause_music():
+    global current_song_index, is_playing, is_paused, song_loaded
     
-    song_name = list_of_songs[current_song_index]
-    pygame.mixer.music.load(song_name)
-    pygame.mixer.music.play(loops=0)
-    pygame.mixer.music.set_volume(.5)
-    get_album_cover(current_song_index)
-
-    
-    
+    if not song_loaded:
+        # First time playing, load the song
+        threading()
+        song_name = list_of_songs[current_song_index]
+        pygame.mixer.music.load(song_name)
+        pygame.mixer.music.play(loops=0)
+        pygame.mixer.music.set_volume(.5)
+        get_album_cover(current_song_index)
+        is_playing = True
+        is_paused = False
+        song_loaded = True
+        play_button.configure(text='Pause')
+    elif is_playing and not is_paused:
+        # Music is playing, so pause it
+        pygame.mixer.music.pause()
+        is_paused = True
+        is_playing = False
+        play_button.configure(text='Play')
+    elif is_paused:
+        # Music is paused, so resume it
+        pygame.mixer.music.unpause()
+        is_paused = False
+        is_playing = True
+        play_button.configure(text='Pause')
 
 
 def skip_forward():
-     global current_song_index
+     global current_song_index, is_playing, is_paused, song_loaded
      current_song_index = (current_song_index + 1) % len(list_of_songs)
-     play_music()
+     pygame.mixer.music.stop()
+     is_playing = False
+     is_paused = False
+     song_loaded = False
+     play_pause_music()
+     play_button.configure(text='Pause')
 
 
 def skip_backward():
-     global current_song_index
+     global current_song_index, is_playing, is_paused, song_loaded
      current_song_index = (current_song_index - 1) % len(list_of_songs)
-     play_music()
+     pygame.mixer.music.stop()
+     is_playing = False
+     is_paused = False
+     song_loaded = False
+     play_pause_music()
+     play_button.configure(text='Pause')
 
 def volume(value):
     pygame.mixer.music.set_volume(float(value))
@@ -93,15 +119,15 @@ def volume(value):
 
 #buttons
 
-# Play button (center)
-play_button = customtkinter.CTkButton(master=root, text='Play', command=play_music)
+# Play/Pause button (center)
+play_button = customtkinter.CTkButton(master=root, text='Play', command=play_pause_music, width=100)
 play_button.place(relx=0.5, rely=0.7, anchor=tkinter.CENTER)
 
-# Next button (right side) - anchor to EAST so right edge is at relx
+# Next button (right side)
 skip_f = customtkinter.CTkButton(master=root, text='>', command=skip_forward, width=50)
 skip_f.place(relx=0.8, rely=0.7, anchor=tkinter.CENTER)
 
-# Back button (left side) - anchor to WEST so left edge is at relx
+# Back button (left side)
 skip_b = customtkinter.CTkButton(master=root, text='<', command=skip_backward, width=50)
 skip_b.place(relx=0.2, rely=0.7, anchor=tkinter.CENTER)
 
